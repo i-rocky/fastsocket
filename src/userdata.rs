@@ -2,7 +2,7 @@ use std::fmt::Write;
 use crate::app::App;
 
 #[derive(Debug)]
-struct UserData<'ud> {
+pub struct UserData<'ud> {
     socket_id: String,
     public_key: String,
     app: &'ud App,
