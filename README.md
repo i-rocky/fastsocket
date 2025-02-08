@@ -1,8 +1,8 @@
 # FastSocket
 
-> IMPORTANT: I'm learning Rust and this is my first project. If it looks like shit, that's because it is. PRs welcome, but you have to explain what you did.
+> *IMPORTANT:* The README is AI generated, mostly wrong. I'm learning Rust and this is my first project. If it looks like shit, that's because it is. PRs welcome, but you have to explain what you did.
 
-FastSocket is a realtime messaging server for the web. It is built on top of [Pusher](https://pusher.com) and [FastWebSockets](https://github.com/fasthttp/websocket).
+FastSocket is a realtime messaging server for the web. It is built on top of [Pusher](https://pusher.com) protocol(so it can leverage the [Pusher JS SDK](https://github.com/pusher/pusher-js)) and [FastWebSockets](https://github.com/denoland/fastwebsockets).
 
 ## Getting Started
 
