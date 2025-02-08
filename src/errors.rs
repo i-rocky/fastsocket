@@ -28,4 +28,19 @@ pub enum FastSocketError {
 
     #[error("Invalid AppCapacity provided")]
     InvalidAppCapacityError,
+
+    #[error("Invalid Payload provided")]
+    InvalidPayloadError,
+
+    #[error("Failed to send pong")]
+    FailedToSendPongError,
+
+    #[error("Failed to send payload")]
+    FailedToSendPayloadError,
+
+    #[error("Encryption error")]
+    EncryptionError,
+
+    #[error("Server is at capacity")]
+    ServerCapacityError,
 }

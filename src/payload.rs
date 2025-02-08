@@ -1,7 +1,10 @@
+use aes_gcm::{Aes256Gcm, Key, aead:: {Aead, KeyInit}, Nonce};
+use serde::{Serialize};
 use serde_json::{Map, Value};
 use crate::errors::FastSocketError;
+use crate::logger::Log;
 
-#[derive(Debug)]
+#[derive(Serialize, Debug)]
 pub struct Payload {
     event: String,
     channel: String,
@@ -91,6 +94,31 @@ impl Payload {
     #[inline]
     pub fn builder() -> PayloadBuilder {
         PayloadBuilder::default()
+    }
+
+    #[inline]
+    pub fn compile(&self, encryption_key: Option<String>) -> Result<Vec<u8>, FastSocketError> {
+        Log::debug(&format!("Compiling payload: {:?}", self));
+
+        let data = serde_json::to_vec(&self)
+            .map_err(|_| FastSocketError::InvalidPayloadError)?;
+
+        if let Some(key) = encryption_key {
+            // Specify the key type explicitly for AES-256-GCM
+            let key: &Key<Aes256Gcm> = Key::<Aes256Gcm>::from_slice(key.as_bytes());
+
+            // Create cipher instance
+            let cipher = Aes256Gcm::new(key);
+
+            // Create nonce
+            let nonce = Nonce::from_slice(b"unique nonce"); // Use a proper nonce generation in production
+
+            // Encrypt the data
+            cipher.encrypt(nonce, data.as_ref())
+                .map_err(|_| FastSocketError::EncryptionError)
+        } else {
+            Ok(data)
+        }
     }
 }
 
