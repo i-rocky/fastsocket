@@ -1,0 +1,216 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Pusher Test</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <link rel="stylesheet" href="https://test.pusher.com/css/bootstrap.css" type="text/css" media="screen, projection">
+  <link rel="stylesheet" href="https://test.pusher.com/css/app.css" type="text/css" media="screen, projection">
+  <link rel="stylesheet" href="https://test.pusher.com/css/bootstrap-responsive.css" type="text/css" media="screen, projection">
+
+  <script src="//code.jquery.com/jquery-1.8.2.js"></script>
+  <script src="//code.jquery.com/ui/1.9.0/jquery-ui.js"></script>
+</head>
+
+<body>
+<div class="navbar navbar-inverse navbar-fixed-top">
+  <div class="navbar-inner">
+    <div class="container-fluid">
+      <a class="brand" href="/">Pusher Test</a>
+    </div>
+  </div>
+</div>
+
+<div class="container-fluid">
+  <script src="https://js.pusher.com/8.0.1/pusher.js"></script>
+
+  <div class="row-fluid">
+    <div class="span9">
+      <div id="controls">
+        <a href="/hello?env=mt1" class="btn btn-primary ajax"
+           data-loading-text="Loading...">
+          Trigger (AJAX)
+        </a>
+
+        <button id="client" class="btn btn-primary"
+                data-loading-text="Loading...">
+          Trigger (Client)
+        </button>
+
+        <span id="connect-group" class="btn-group">
+        <a href="#" id="connect" class="btn">Connect</a>
+        <a href="#" id="disconnect" class="btn">Disconnect</a>
+      </span>
+
+
+        <div class="btn disabled">SSL on</div>
+
+
+        <span class="label" id="status">-</span>
+      </div>
+
+      <h4>Event log</h4>
+
+      <ul class="" id="debug-console"></ul>
+    </div>
+
+    <div class="span3">
+      <h3>Using version 8.0.1</h3>
+
+
+      <p>
+        Connecting using
+
+        <strong>WSS/HTTPS</strong>.
+
+      </p>
+
+
+
+      <h4>Choose cluster</h4>
+
+      <select name="env" id="cluster-choice">
+
+        <option value="mt1" selected="selected">mt1</option>
+
+        <option value="us2" >us2</option>
+
+        <option value="us3" >us3</option>
+
+        <option value="eu" >eu</option>
+
+        <option value="ap1" >ap1</option>
+
+        <option value="ap2" >ap2</option>
+
+        <option value="ap3" >ap3</option>
+
+        <option value="ap4" >ap4</option>
+
+        <option value="sa1" >sa1</option>
+
+      </select>
+
+
+
+      <h4>Select transports</h4>
+      <ul id="transports">
+
+        <li>
+          <input type="checkbox" id="transport_ws">
+          ws
+        </li>
+
+        <li>
+          <input type="checkbox" id="transport_xhr_streaming">
+          xhr_streaming
+        </li>
+
+        <li>
+          <input type="checkbox" id="transport_xdr_streaming">
+          xdr_streaming
+        </li>
+
+        <li>
+          <input type="checkbox" id="transport_xhr_polling">
+          xhr_polling
+        </li>
+
+        <li>
+          <input type="checkbox" id="transport_xdr_polling">
+          xdr_polling
+        </li>
+
+        <li>
+          <input type="checkbox" id="transport_sockjs">
+          sockjs
+        </li>
+
+      </ul>
+
+
+      <h4>Filter logs</h4>
+      <ul id="log_types">
+
+        <li>
+          <input type="checkbox" id="log_status">
+          status
+        </li>
+
+        <li>
+          <input type="checkbox" id="log_message">
+          message
+        </li>
+
+        <li>
+          <input type="checkbox" id="log_error">
+          error
+        </li>
+
+        <li>
+          <input type="checkbox" id="log_debug">
+          debug
+        </li>
+
+      </ul>
+
+      <h4>Files</h4>
+
+      <ul>
+
+        <li><a href="https://js.pusher.com/8.0.1/pusher.js" class="">pusher.js</a></li>
+
+        <li><a href="https://js.pusher.com/8.0.1/pusher.min.js" class="">pusher.min.js</a></li>
+
+        <li><a href="https://js.pusher.com/8.0.1/json2.js" class="">json2.js</a></li>
+
+        <li><a href="https://js.pusher.com/8.0.1/json2.min.js" class="">json2.min.js</a></li>
+
+        <li><a href="https://js.pusher.com/8.0.1/sockjs.js" class="">sockjs.js</a></li>
+
+        <li><a href="https://js.pusher.com/8.0.1/sockjs.min.js" class="">sockjs.min.js</a></li>
+
+      </ul>
+
+      </div>
+    </div>
+  </div>
+
+  <script type="text/javascript" src="https://test.pusher.com/js/logger.js"></script>
+  <script type="text/javascript" src="app.js"></script>
+  <script type="text/javascript">
+    $(document).ready(function() {
+      // Not usually required - used for debugging on multiple environments
+      Pusher.host = "127.0.0.1";
+      Pusher.ws_port = 6002;
+      // Pusher.wss_port = 443;
+      // Pusher.sockjs_host = "sockjs.pusher.com";
+      // Pusher.sockjs_http_port = 80;
+      // Pusher.sockjs_https_port = 443;
+
+
+      bindTransportCheckboxes('8.0.1', true, {"ws":true,"xhr_streaming":true,"xdr_streaming":true,"xhr_polling":true,"xdr_polling":true,"sockjs":true});
+
+
+      bindLogCheckboxes(logger.types);
+
+      $('#cluster-choice').change(function() {
+        var chosenCluster = $(this).find(":selected").text();
+        window.location.href = '/?env=' + chosenCluster;
+      })
+
+      run({
+        name: "mt1",
+        key: "a0173cd5499b34d93109",
+        encrypted: true,
+        version: "[&quot;8&quot;, &quot;0&quot;, &quot;1&quot;]"
+      });
+    });
+  </script>
+
+<script src="https://test.pusher.com/js/bootstrap.js"></script>
+<script src="https://test.pusher.com/js/moment.min.js"></script>
+</body>
+</html>
