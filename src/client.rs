@@ -3,7 +3,7 @@ use crate::channel_manager::ChannelManager;
 use crate::websocket_connection::WebsocketConnection;
 use std::fmt::Write;
 use std::sync::Arc;
-use tokio::sync::Mutex;
+use tokio::sync::{Mutex, RwLock};
 
 #[derive(Clone)]
 pub struct Client {
@@ -11,7 +11,7 @@ pub struct Client {
     public_key: String,
     app: Arc<App>,
     ws: Arc<Mutex<WebsocketConnection>>,
-    channel_manager: Arc<Box<dyn ChannelManager>>,
+    channel_manager: Arc<RwLock<Box<dyn ChannelManager>>>,
 }
 
 impl Client {
@@ -19,7 +19,7 @@ impl Client {
     pub fn new(
         ws: WebsocketConnection,
         app: Arc<App>,
-        channel_manager: Arc<Box<dyn ChannelManager>>,
+        channel_manager: Arc<RwLock<Box<dyn ChannelManager>>>,
     ) -> Self {
         Self {
             app,

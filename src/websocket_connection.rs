@@ -1,4 +1,4 @@
-use fastwebsockets::{FragmentCollector, Frame, OpCode, Payload as WsPayload};
+use fastwebsockets::{FragmentCollector, Frame, Payload as WsPayload};
 use hyper::upgrade::Upgraded;
 use hyper_util::rt::TokioIo;
 use crate::errors::FastSocketError;

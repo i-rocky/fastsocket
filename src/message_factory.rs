@@ -7,16 +7,17 @@ use crate::logger::Log;
 use crate::message::Message;
 use crate::payload::Payload;
 use std::sync::Arc;
+use tokio::sync::RwLock;
 
 pub struct MessageFactory {
     client: Arc<Client>,
-    channel_manager: Arc<Box<dyn ChannelManager>>,
+    channel_manager: Arc<RwLock<Box<dyn ChannelManager>>>,
 }
 
 impl MessageFactory {
     pub fn new(
         client: Arc<Client>,
-        channel_manager: Arc<Box<dyn ChannelManager>>,
+        channel_manager: Arc<RwLock<Box<dyn ChannelManager>>>,
     ) -> Arc<Box<Self>> {
         Arc::new(Box::new(Self {
             client,

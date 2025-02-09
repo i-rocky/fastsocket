@@ -9,18 +9,19 @@ use crate::websocket_connection::WebsocketConnection;
 use fastwebsockets::{upgrade, OpCode, WebSocketError};
 use std::io::Read;
 use std::sync::Arc;
+use tokio::sync::RwLock;
 use crate::message_factory::MessageFactory;
 
 #[derive(Clone)]
 pub struct WebSocket {
     app_manager: Arc<Box<dyn AppManager>>,
-    channel_manager: Arc<Box<dyn ChannelManager>>,
+    channel_manager: Arc<RwLock<Box<dyn ChannelManager>>>,
 }
 
 impl WebSocket {
     pub fn new(
         app_manager: Arc<Box<dyn AppManager>>,
-        channel_manager: Arc<Box<dyn ChannelManager>>,
+        channel_manager: Arc<RwLock<Box<dyn ChannelManager>>>,
     ) -> Arc<Box<Self>> {
         Arc::new(Box::new(Self {
             app_manager,

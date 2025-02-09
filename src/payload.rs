@@ -60,10 +60,9 @@ impl Payload {
     }
 
     #[inline]
-    pub fn get_data_str(&self, key: &str) -> Option<String> {
+    pub fn get_data_str(&self, key: &str) -> Option<&str> {
         self.data.get(key)
             .and_then(Value::as_str)
-            .map(|s| s.to_string())
     }
 
     #[inline]
@@ -106,11 +105,6 @@ impl Payload {
         if self.event.is_empty() {
             return Err(FastSocketError::InvalidPayloadError);
         }
-        map.insert(String::from("event"), Value::from(self.event.clone()));
-
-        if !self.channel.is_empty() {
-            map.insert(String::from("channel"), Value::from(self.channel.clone()));
-        }
 
         if !self.data.is_empty() {
             let mut data = json!(self.data.clone()).to_string();
@@ -140,6 +134,12 @@ impl Payload {
         } else {
             map.insert(String::from("data"), json!({}));
         }
+
+        if !self.channel.is_empty() {
+            map.insert(String::from("channel"), Value::from(self.channel.clone()));
+        }
+
+        map.insert(String::from("event"), Value::from(self.event.clone()));
 
         let data = serde_json::to_vec(&map)
             .map_err(|_| FastSocketError::InvalidPayloadError)?;

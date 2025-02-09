@@ -6,18 +6,19 @@ use crate::message::Message;
 use crate::payload::Payload;
 use async_trait::async_trait;
 use std::sync::Arc;
+use tokio::sync::RwLock;
 
 pub struct ClientMessage {
     client: Arc<Client>,
     payload: Payload,
-    channel_manager: Arc<Box<dyn ChannelManager>>,
+    channel_manager: Arc<RwLock<Box<dyn ChannelManager>>>,
 }
 
 impl ClientMessage {
     pub fn new(
         client: Arc<Client>,
         payload: Payload,
-        channel_manager: Arc<Box<dyn ChannelManager>>,
+        channel_manager: Arc<RwLock<Box<dyn ChannelManager>>>,
     ) -> Self {
         Self {
             client,

@@ -22,8 +22,8 @@ function logError(e) {
   logger.log('error', JSON.stringify(e));
 }
 
-function logMessage(msg) {
-  logger.log('message', JSON.stringify(msg));
+function logMessage(msg, tag = null) {
+  logger.log('message', (tag ? tag  + ': ' : '') + JSON.stringify(msg));
 }
 
 function bindTransportCheckboxes(version, encrypted, enabledTransports) {
@@ -132,6 +132,16 @@ function run(env) {
   // Flash fallback logging
   WEB_SOCKET_DEBUG = true;
 
+  function subscribe(channelName) {
+    channel = pusher.subscribe(channelName);
+    channel.bind("event", function(data) {
+      logMessage(data, channelName);
+    });
+    channel.bind('alert', function(data) {
+      alert(data);
+    });
+  }
+
   if (compareVersions(env.version, [1,5,0]) >= 0 && env.encrypted) {
     pusher = new Pusher(env.key, {
       wsHost: '127.0.0.1',
@@ -145,13 +155,10 @@ function run(env) {
       },
       cluster: env.name
     });
-    channel = pusher.subscribe('presence-channel');
-    channel.bind("event", function(data) {
-      logMessage(data);
-    });
-    channel.bind('alert', function(data) {
-      alert(data);
-    });
+    subscribe('presence-channel');
+    subscribe('public-channel');
+    subscribe('private-channel');
+    subscribe('encrypted-channel');
   } else if (compareVersions(env.version, [1,4,0]) >= 0) {
     pusher = new Pusher(env.key, {
       auth: {

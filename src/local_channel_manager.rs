@@ -13,10 +13,10 @@ pub struct LocalChannelManager {
 
 impl LocalChannelManager {
     #[inline]
-    pub fn new() -> Arc<Box<dyn ChannelManager>> {
-        Arc::new(Box::new(Self {
+    pub fn new() -> Arc<RwLock<Box<dyn ChannelManager>>> {
+        Arc::new(RwLock::new(Box::new(Self {
             channels: HashMap::with_capacity(16),
-        }))
+        })))
     }
 }
 
