@@ -43,4 +43,28 @@ pub enum FastSocketError {
 
     #[error("Server is at capacity")]
     ServerCapacityError,
+
+    #[error("Invalid App provided")]
+    InvalidAppError,
+
+    #[error("Upgrade failed")]
+    UpgradeFailedError,
+
+    #[error("Connection closed")]
+    ConnectionClosed,
+
+    #[error("Error handling message")]
+    ErrorReadingPayload,
+
+    #[error("Error decoding payload")]
+    ErrorDecodingPayload,
+
+    #[error("Error creating message")]
+    ErrorCreatingMessage,
+
+    #[error("Error sending pong")]
+    ErrorSendingPong,
+
+    #[error("Error handling message")]
+    ErrorHandlingMessage,
 }

@@ -1,5 +1,6 @@
 use crate::errors::FastSocketError;
 use serde::{Deserialize, Serialize};
+use std::sync::Arc;
 
 #[derive(Deserialize, Serialize, Debug)]
 pub struct App {
@@ -28,7 +29,7 @@ impl App {
         path: String,
         capacity: u64,
         flags: u8,
-    ) -> Result<Self, FastSocketError> {
+    ) -> Result<Arc<Self>, FastSocketError> {
         if id.is_empty() {
             return Err(FastSocketError::InvalidAppIdError);
         }
@@ -57,7 +58,7 @@ impl App {
             return Err(FastSocketError::InvalidAppCapacityError);
         }
 
-        Ok(App {
+        Ok(Arc::new(App {
             id,
             key,
             secret,
@@ -67,7 +68,27 @@ impl App {
             capacity,
             flags,
             connection_count: 0,
-        })
+        }))
+    }
+
+    #[inline]
+    pub fn arc(self) -> Arc<App> {
+        Arc::new(self)
+    }
+
+    #[inline]
+    pub fn to_app(&self) -> Self {
+        Self {
+            id: self.id.clone(),
+            key: self.key.clone(),
+            secret: self.secret.clone(),
+            name: self.name.clone(),
+            host: self.host.clone(),
+            path: self.path.clone(),
+            capacity: self.capacity,
+            flags: self.flags,
+            connection_count: self.connection_count,
+        }
     }
 
     #[inline]

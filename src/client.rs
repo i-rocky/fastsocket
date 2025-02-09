@@ -1,28 +1,37 @@
-use std::fmt::Write;
-use fastwebsockets::{FragmentCollector, Frame, OpCode, Payload as WsPayload};
-use hyper::upgrade::Upgraded;
-use hyper_util::rt::TokioIo;
 use crate::app::App;
-use crate::errors::FastSocketError;
-use crate::logger::Log;
-use crate::payload::Payload;
+use crate::channel_manager::ChannelManager;
+use crate::websocket_connection::WebsocketConnection;
+use std::fmt::Write;
+use std::sync::Arc;
+use tokio::sync::Mutex;
 
-pub struct Client<'ud> {
+#[derive(Clone)]
+pub struct Client {
     socket_id: String,
     public_key: String,
-    app: &'ud App,
-    ws: &'ud mut FragmentCollector<TokioIo<Upgraded>>,
+    app: Arc<App>,
+    ws: Arc<Mutex<WebsocketConnection>>,
+    channel_manager: Arc<Box<dyn ChannelManager>>,
 }
 
-impl<'ud> Client<'ud> {
+impl Client {
     #[inline]
-    pub fn new(ws: &'ud mut FragmentCollector<TokioIo<Upgraded>>, app: &'ud App) -> Self {
-        Client {
+    pub fn new(
+        ws: WebsocketConnection,
+        app: Arc<App>,
+        channel_manager: Arc<Box<dyn ChannelManager>>,
+    ) -> Self {
+        Self {
             app,
-            ws,
+            ws: Arc::new(Mutex::new(ws)),
             socket_id: Self::generate_unique_socket_id(),
             public_key: String::with_capacity(64),
+            channel_manager,
         }
+    }
+
+    pub fn socket(&self) -> Arc<Mutex<WebsocketConnection>> {
+        self.ws.clone()
     }
 
     #[inline(always)]
@@ -33,10 +42,13 @@ impl<'ud> Client<'ud> {
     #[inline]
     fn generate_unique_socket_id() -> String {
         let mut buffer = String::with_capacity(40);
-        write!(&mut buffer, "{:016x}:{:016x}",
-               fastrand::u64(..),
-               fastrand::u64(..)
-        ).unwrap();
+        write!(
+            &mut buffer,
+            "{:016x}:{:016x}",
+            fastrand::u64(..),
+            fastrand::u64(..)
+        )
+        .unwrap();
         buffer
     }
 
@@ -46,40 +58,18 @@ impl<'ud> Client<'ud> {
     }
 
     #[inline(always)]
-    pub fn get_app(&self) -> &App {
-        &self.app
+    pub fn get_app(&self) -> Arc<App> {
+        self.app.clone()
     }
 
-    #[inline]
-    pub async fn send(&mut self, payload: &Payload) -> Result<(), FastSocketError> {
-        let key = (!self.public_key.is_empty()).then(|| self.public_key.as_str());
-
-        let buffer = payload.compile(key.map(String::from))?;
-        let ws_payload = WsPayload::from(buffer);
-        let frame = Frame::text(ws_payload);
-        self.ws.write_frame(frame)
-            .await
-            .map_err(|_| FastSocketError::FailedToSendPayloadError)?;
-
-        Ok(())
-    }
-
-    #[inline]
-    pub async fn pong(&mut self) -> Result<(), FastSocketError> {
-        Log::debug("Sending pong");
-        let pong_frame = Frame::new(true, OpCode::Pong, None, WsPayload::from(Vec::new()));
-        self.ws.write_frame(pong_frame)
-            .await
-            .map_err(|_| FastSocketError::FailedToSendPongError)?;
-        Ok(())
+    #[inline(always)]
+    pub fn get_socket(&self) -> Arc<Mutex<WebsocketConnection>> {
+        self.ws.clone()
     }
 }
 
-impl<'ud> Drop for Client<'ud> {
+impl Drop for Client {
     fn drop(&mut self) {
         self.public_key.clear();
     }
 }
-
-unsafe impl Send for Client<'_> {}
-unsafe impl Sync for Client<'_> {}

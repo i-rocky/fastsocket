@@ -1,8 +1,8 @@
-use aes_gcm::{Aes256Gcm, Key, aead:: {Aead, KeyInit}, Nonce};
-use serde::{Serialize};
-use serde_json::{Map, Value};
 use crate::errors::FastSocketError;
 use crate::logger::Log;
+use aes_gcm::{aead::{Aead, KeyInit}, Aes256Gcm, Key, Nonce};
+use serde::Serialize;
+use serde_json::{Map, Value};
 
 #[derive(Serialize, Debug)]
 pub struct Payload {
@@ -27,8 +27,8 @@ impl Payload {
 
         let channel = obj.get("channel")
             .and_then(Value::as_str)
-            .ok_or(FastSocketError::InvalidMessageError)?
-            .to_string();
+            .map(|s| s.to_string())
+            .unwrap_or_else(|| "".to_string());
 
         let data = obj.get("data")
             .and_then(Value::as_object)
@@ -157,12 +157,14 @@ impl PayloadBuilder {
     pub fn build(self) -> Result<Payload, FastSocketError> {
         let event = self.event
             .ok_or(FastSocketError::InvalidMessageError)?;
-        let channel = self.channel
-            .ok_or(FastSocketError::InvalidMessageError)?;
 
         Ok(Payload {
             event,
-            channel,
+            channel: if self.channel.is_none() {
+                "".to_string()
+            } else {
+                self.channel.unwrap()
+            },
             data: self.data,
         })
     }
