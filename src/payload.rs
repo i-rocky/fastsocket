@@ -1,8 +1,10 @@
 use crate::errors::FastSocketError;
 use crate::logger::Log;
 use aes_gcm::{aead::{Aead, KeyInit}, Aes256Gcm, Key, Nonce};
+use base64::Engine;
+use base64::prelude::BASE64_STANDARD;
 use serde::Serialize;
-use serde_json::{Map, Value};
+use serde_json::{json, Map, Value};
 
 #[derive(Serialize, Debug)]
 pub struct Payload {
@@ -100,25 +102,49 @@ impl Payload {
     pub fn compile(&self, encryption_key: Option<String>) -> Result<Vec<u8>, FastSocketError> {
         Log::debug(&format!("Compiling payload: {:?}", self));
 
-        let data = serde_json::to_vec(&self)
+        let mut map = serde_json::Map::new();
+        if self.event.is_empty() {
+            return Err(FastSocketError::InvalidPayloadError);
+        }
+        map.insert(String::from("event"), Value::from(self.event.clone()));
+
+        if !self.channel.is_empty() {
+            map.insert(String::from("channel"), Value::from(self.channel.clone()));
+        }
+
+        if !self.data.is_empty() {
+            let mut data = json!(self.data.clone()).to_string();
+
+            if let Some(key) = encryption_key {
+                // Specify the key type explicitly for AES-256-GCM
+                let key: &Key<Aes256Gcm> = Key::<Aes256Gcm>::from_slice(key.as_bytes());
+
+                // Create cipher instance
+                let cipher = Aes256Gcm::new(key);
+
+                // Create nonce
+                let nonce = Nonce::from_slice(b"unique nonce"); // Use a proper nonce generation in production
+
+                // Encrypt the data
+                let result = cipher.encrypt(nonce, data.as_bytes())
+                    .map_err(|_| FastSocketError::EncryptionError);
+
+                if result.is_err() {
+                    return Err(FastSocketError::EncryptionError);
+                }
+
+                data = BASE64_STANDARD.encode(result?);
+            }
+
+            map.insert(String::from("data"), Value::from(data));
+        } else {
+            map.insert(String::from("data"), json!({}));
+        }
+
+        let data = serde_json::to_vec(&map)
             .map_err(|_| FastSocketError::InvalidPayloadError)?;
 
-        if let Some(key) = encryption_key {
-            // Specify the key type explicitly for AES-256-GCM
-            let key: &Key<Aes256Gcm> = Key::<Aes256Gcm>::from_slice(key.as_bytes());
-
-            // Create cipher instance
-            let cipher = Aes256Gcm::new(key);
-
-            // Create nonce
-            let nonce = Nonce::from_slice(b"unique nonce"); // Use a proper nonce generation in production
-
-            // Encrypt the data
-            cipher.encrypt(nonce, data.as_ref())
-                .map_err(|_| FastSocketError::EncryptionError)
-        } else {
-            Ok(data)
-        }
+        Ok(data)
     }
 }
 

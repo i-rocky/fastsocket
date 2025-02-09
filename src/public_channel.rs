@@ -72,7 +72,14 @@ impl Channel for PublicChannel {
 
     async fn broadcast(&mut self, payload: &Payload) -> Result<(), FastSocketError> {
         for client in self.connections.values() {
-            client.socket().lock().await.send(payload).await?;
+            let socket = client.socket();
+            let mut guard = socket.lock().await;
+            let result = guard.send(payload).await;
+            drop(guard);
+
+            if result.is_err() {
+                Log::error(&format!("Failed to send payload: {:?}", result));
+            }
         }
         Ok(())
     }
@@ -85,7 +92,14 @@ impl Channel for PublicChannel {
     async fn broadcast_to_everyone_except(&mut self, socket_id: &str, payload: &Payload) -> Result<(), FastSocketError> {
         for (id, client) in self.connections.iter() {
             if id != socket_id {
-                client.socket().lock().await.send(payload).await?;
+                let socket = client.socket();
+                let mut guard = socket.lock().await;
+                let result = guard.send(payload).await;
+                drop(guard);
+
+                if result.is_err() {
+                    Log::error(&format!("Failed to send payload: {:?}", result));
+                }
             }
         }
         Ok(())

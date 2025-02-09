@@ -3,7 +3,7 @@ use hyper::upgrade::Upgraded;
 use hyper_util::rt::TokioIo;
 use crate::errors::FastSocketError;
 use crate::logger::Log;
-use crate::payload::Payload;
+use crate::payload::{Payload, PayloadBuilder};
 
 pub struct WebsocketConnection {
     ws: FragmentCollector<TokioIo<Upgraded>>,
@@ -20,7 +20,8 @@ impl WebsocketConnection {
     }
 
     #[inline(always)]
-    pub async fn write(&mut self, frame: fastwebsockets::Frame<'_>) -> Result<(), fastwebsockets::WebSocketError> {
+    pub async fn write(&mut self, frame: Frame<'_>) -> Result<(), fastwebsockets::WebSocketError> {
+        Log::debug(&format!("Sending message: {:?}", frame.payload));
         self.ws.write_frame(frame).await
     }
 
@@ -47,10 +48,15 @@ impl WebsocketConnection {
     #[inline]
     pub async fn pong(&mut self) -> Result<(), FastSocketError> {
         Log::debug("Sending pong");
-        let pong_frame = Frame::new(true, OpCode::Pong, None, WsPayload::from(Vec::new()));
-        self.write(pong_frame)
+        let payload = PayloadBuilder::default()
+            .event("pusher:pong")
+            .build()
+            .map_err(|_| FastSocketError::FailedToSendPongError)?;
+
+        self.send(&payload)
             .await
             .map_err(|_| FastSocketError::FailedToSendPongError)?;
+
         Ok(())
     }
 }

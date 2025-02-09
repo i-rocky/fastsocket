@@ -42,14 +42,21 @@ impl WebSocket {
             eprintln!("Failed to build payload {:?}", payload);
             return;
         }
-
-        client
-            .get_socket()
+        let socket = client.get_socket();
+        let mut guard = socket
             .lock()
-            .await
+            .await;
+
+        let result = guard
             .send(&payload.unwrap())
-            .await
-            .expect("Failed to send payload");
+            .await;
+
+        drop(guard);
+
+        if result.is_err() {
+            Log::error(&format!("Failed to send payload: {:?}", result));
+            return;
+        }
     }
 
     pub async fn on_close(&self, _client: Arc<Client>) {
@@ -91,7 +98,11 @@ impl WebSocket {
                 Ok(Option::from(Payload::new(content.as_str())?))
             }
             OpCode::Ping => {
-                let result = client.get_socket().lock().await.pong().await;
+                let socket = client.get_socket();
+                let mut guard = socket.lock().await;
+                let result = guard.pong().await;
+                drop(guard);
+
                 if result.is_err() {
                     Log::error(&format!("Error sending pong: {:?}", result));
                     self.on_error(client).await;
@@ -122,13 +133,16 @@ impl WebSocket {
 
         loop {
             let lock_mtx = mtx_client.get_socket();
-            let mut socket = lock_mtx.lock().await;
-            let frame = socket.read().await;
+            let mut guard = lock_mtx.lock().await;
+            let frame = guard.read().await;
+
             if frame.is_err() {
+                drop(guard);
                 break;
             }
 
             let payload = self.get_payload(mtx_client.clone(), frame?).await;
+            drop(guard);
             if payload.is_err() {
                 Log::error(&format!("Error handling message: {:?}", payload));
                 self.on_error(mtx_client.clone()).await;

@@ -34,7 +34,11 @@ impl Message for ChannelProtocolMessage {
         match self.payload.get_event() {
             "pusher:ping" => {
                 Log::debug("Received ping");
-                let result = self.client.get_socket().lock().await.pong().await;
+                let socket = self.client.get_socket();
+                let mut guard = socket.lock().await;
+                let result = guard.pong().await;
+                drop(guard);
+
                 if result.is_err() {
                     Log::error(&format!("Error sending pong: {:?}", result));
                 }
