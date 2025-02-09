@@ -1,13 +1,11 @@
-use std::future::Future;
-use std::pin::Pin;
 use crate::channel_manager::ChannelManager;
 use crate::client::Client;
 use crate::errors::FastSocketError;
 use crate::logger::Log;
 use crate::message::Message;
 use crate::payload::Payload;
+use async_trait::async_trait;
 use std::sync::Arc;
-use futures::FutureExt;
 
 pub struct ChannelProtocolMessage {
     client: Arc<Client>,
@@ -29,25 +27,21 @@ impl ChannelProtocolMessage {
     }
 }
 
+#[async_trait]
 impl Message for ChannelProtocolMessage {
-    fn respond<'a>(&'a mut self) -> Pin<Box<dyn Future<Output=Result<(), FastSocketError>> + Send + 'a>> {
-        async move {
-            match self.payload.get_event() {
-                "pusher:ping" => {
-                    let result = self.client
-                        .get_socket()
-                        .lock()
-                        .await
-                        .pong()
-                        .await;
-                    if result.is_err() {
-                        Log::error(&format!("Error sending pong: {:?}", result));
-                    }
-
-                    Ok(())
+    async fn respond(&self) -> Result<(), FastSocketError> {
+        Log::debug(&format!("Received channel protocol message: {:?}", self.payload));
+        match self.payload.get_event() {
+            "pusher:ping" => {
+                Log::debug("Received ping");
+                let result = self.client.get_socket().lock().await.pong().await;
+                if result.is_err() {
+                    Log::error(&format!("Error sending pong: {:?}", result));
                 }
-                &_ => Ok(()),
+                Log::debug("Pong sent");
+                Ok(())
             }
-        }.boxed()
+            &_ => Ok(()),
+        }
     }
 }

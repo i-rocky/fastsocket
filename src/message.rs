@@ -1,7 +1,7 @@
-use std::future::Future;
-use std::pin::Pin;
 use crate::errors::FastSocketError;
+use async_trait::async_trait;
 
-pub trait Message {
-    fn respond<'a>(&'a mut self) -> Pin<Box<dyn Future<Output=Result<(), FastSocketError>> + Send + 'a>>;
+#[async_trait]
+pub trait Message: Send + Sync {
+    async fn respond(&self) -> Result<(), FastSocketError>;
 }

@@ -24,21 +24,21 @@ impl MessageFactory {
         }))
     }
 
-    pub fn for_payload(&self, payload: Payload) -> Result<Box<dyn Message>, FastSocketError> {
+    pub fn for_payload(&self, payload: Payload) -> Result<Arc<Box<dyn Message>>, FastSocketError> {
         if payload.get_event().starts_with("pusher:") {
             Log::debug("Received pusher message");
-            Ok(Box::new(ChannelProtocolMessage::new(
+            Ok(Arc::new(Box::new(ChannelProtocolMessage::new(
                 self.client.clone(),
                 payload,
                 self.channel_manager.clone(),
-            )))
+            ))))
         } else {
             Log::debug("Received client message");
-            Ok(Box::new(ClientMessage::new(
+            Ok(Arc::new(Box::new(ClientMessage::new(
                 self.client.clone(),
                 payload,
                 self.channel_manager.clone(),
-            )))
+            ))))
         }
     }
 }

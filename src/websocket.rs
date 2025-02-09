@@ -9,6 +9,7 @@ use crate::websocket_connection::WebsocketConnection;
 use fastwebsockets::{upgrade, OpCode, WebSocketError};
 use std::io::Read;
 use std::sync::Arc;
+use crate::message_factory::MessageFactory;
 
 #[derive(Clone)]
 pub struct WebSocket {
@@ -115,7 +116,7 @@ impl WebSocket {
             self.channel_manager.clone(),
         );
         let mtx_client = Arc::new(client);
-        // let factory = MessageFactory::new(mtx_client.clone(), self.channel_manager.clone()); // TODO: uncomment
+        let factory = MessageFactory::new(mtx_client.clone(), self.channel_manager.clone());
 
         self.on_open(mtx_client.clone()).await;
 
@@ -130,6 +131,27 @@ impl WebSocket {
             let payload = self.get_payload(mtx_client.clone(), frame?).await;
             if payload.is_err() {
                 Log::error(&format!("Error handling message: {:?}", payload));
+                self.on_error(mtx_client.clone()).await;
+                break;
+            }
+
+            let payload = payload.unwrap();
+
+            if payload.is_none() {
+                continue;
+            }
+
+            let msg = factory.for_payload(payload.unwrap());
+            if msg.is_err() {
+                Log::error(&format!("Error creating message: {:?}", msg.err().unwrap()));
+                self.on_error(mtx_client.clone()).await;
+                break;
+            }
+
+            let responder = msg.unwrap();
+            let result = responder.respond().await;
+            if result.is_err() {
+                Log::error(&format!("Error handling message: {:?}", result));
                 self.on_error(mtx_client.clone()).await;
                 break;
             }
