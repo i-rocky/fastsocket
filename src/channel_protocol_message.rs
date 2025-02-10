@@ -7,7 +7,6 @@ use crate::payload::Payload;
 use async_trait::async_trait;
 use std::sync::Arc;
 use tokio::sync::RwLock;
-use crate::channel::Channel;
 
 pub struct ChannelProtocolMessage {
     client: Arc<Client>,
@@ -55,7 +54,7 @@ impl Message for ChannelProtocolMessage {
                     return Ok(());
                 }
                 let channel_name = channel_name.unwrap();
-                let mut read_guard = self.channel_manager.read().await;
+                let read_guard = self.channel_manager.read().await;
                 let e_channel = read_guard.find(self.client.get_app().get_id(), channel_name);
                 drop(read_guard);
                 let channel = if e_channel.is_some() {
@@ -78,7 +77,7 @@ impl Message for ChannelProtocolMessage {
             "pusher:unsubscribe" => {
                 Log::debug("Received unsubscribe");
                 let channel_name = self.payload.get_channel();
-                let mut read_guard = self.channel_manager.read().await;
+                let read_guard = self.channel_manager.read().await;
                 let e_channel = read_guard.find(self.client.get_app().get_id(), channel_name);
                 drop(read_guard);
                 if e_channel.is_none() {
