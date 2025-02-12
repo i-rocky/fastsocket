@@ -41,15 +41,9 @@ impl Client {
 
     #[inline]
     fn generate_unique_socket_id() -> String {
-        let mut buffer = String::with_capacity(40);
-        write!(
-            &mut buffer,
-            "{:016x}:{:016x}",
-            fastrand::u64(..),
-            fastrand::u64(..)
-        )
-        .unwrap();
-        buffer
+        let a = fastrand::u64(0..1_000_000);
+        let b = fastrand::u64(0..1_000_000);
+        format!("{:06}.{:06}", a, b)
     }
 
     #[inline(always)]

@@ -35,7 +35,7 @@ impl WebSocket {
         let builder = PayloadBuilder::default()
             .event("pusher:connection_established")
             .add_data("socket_id", client.get_socket_id())
-            .add_data("activity_timeout", 5);
+            .add_data("activity_timeout", 30);
 
         let payload = builder.build();
         if payload.is_err() {

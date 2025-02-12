@@ -17,4 +17,13 @@ clean:
 test:
 	cargo test
 
-.PHONY: web run build clean test
+server\:build:
+	cd _ && go build -o server server.go
+
+server\:run:
+	cd _ && ./server
+
+server:
+	cd _ && go run server.go
+
+.PHONY: web run build clean test server\:build server\:run server
