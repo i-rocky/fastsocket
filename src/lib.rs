@@ -15,3 +15,4 @@ pub mod client_message;
 pub mod message_factory;
 pub mod websocket;
 pub mod websocket_connection;
+pub mod private_channel;

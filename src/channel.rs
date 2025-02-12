@@ -1,12 +1,14 @@
 use crate::client::Client;
 use crate::errors::FastSocketError;
+use crate::logger::Log;
 use crate::payload::Payload;
 use async_trait::async_trait;
+use hmac::{Hmac, Mac};
 use serde_json::{json, Value};
+use sha2::Sha256;
 use std::collections::HashMap;
 use std::sync::Arc;
 use tokio::sync::RwLock;
-use crate::logger::Log;
 
 #[async_trait]
 pub trait Channel: Send + Sync {
@@ -14,8 +16,53 @@ pub trait Channel: Send + Sync {
     fn get_connections(&self) -> &RwLock<HashMap<String, Arc<Client>>>;
 
     #[inline]
-    async fn verify_signature(&self, client: Arc<Client>, payload: &Payload) -> Result<(), FastSocketError> {
-        Ok(())
+    async fn verify_signature(
+        &self,
+        client: Arc<Client>,
+        payload: &Payload,
+    ) -> Result<(), FastSocketError> {
+        let sig = payload.get_data_str("auth");
+        if sig.is_none() {
+            return Err(FastSocketError::InvalidSignatureError);
+        }
+
+        let sig = sig.unwrap().split(":").collect::<Vec<&str>>();
+        if sig.len() != 2 {
+            return Err(FastSocketError::InvalidSignatureError);
+        }
+
+        let sig = hex::decode(sig[1]);
+        if sig.is_err() {
+            return Err(FastSocketError::InvalidSignatureError)
+        }
+        let sig = sig.unwrap();
+        let expected_sig = sig.as_slice();
+
+        let mut sig_data = client.get_socket_id().to_string();
+        sig_data.push_str(":");
+        sig_data.push_str(self.get_name());
+        let channel_data = payload.get_data_str("channel_data");
+        if channel_data.is_some() {
+            sig_data.push_str(":");
+            sig_data.push_str(channel_data.unwrap());
+        }
+
+        type HmacSha256 = Hmac<Sha256>;
+
+        let hasher = HmacSha256::new_from_slice(client.get_app().get_secret().as_bytes());
+        if hasher.is_err() {
+            return Err(FastSocketError::InvalidSignatureError);
+        }
+        let mut mac = hasher.unwrap();
+
+        mac.update(sig_data.as_bytes());
+        let bytes = mac.finalize().into_bytes();
+        let result = bytes.as_slice();
+        if result.eq(expected_sig) {
+            Ok(())
+        } else {
+            Err(FastSocketError::InvalidSignatureError)
+        }
     }
 
     #[inline]
@@ -48,12 +95,23 @@ pub trait Channel: Send + Sync {
         subscribers
     }
 
-
+    #[inline]
+    async fn subscribe(
+        &mut self,
+        client: Arc<Client>,
+        payload: &Payload,
+    ) -> Result<(), FastSocketError> {
+        self.default_subscribe(client, payload).await
+    }
 
     #[inline]
-    async fn subscribe(&mut self, _client: Arc<Client>, _payload: &Payload) -> Result<(), FastSocketError> {
+    async fn default_subscribe(
+        &mut self,
+        client: Arc<Client>,
+        _payload: &Payload,
+    ) -> Result<(), FastSocketError> {
         Log::debug("Subscribing");
-        self.save_connection(_client.clone()).await?;
+        self.save_connection(client.clone()).await?;
 
         Log::debug("Creating subscription succeeded payload");
         let payload = Payload::builder()
@@ -66,7 +124,7 @@ pub trait Channel: Send + Sync {
         }
 
         Log::debug("Sending subscription succeeded");
-        let socket = _client.socket();
+        let socket = client.socket();
         let mut guard = socket.lock().await;
         guard.send(&payload?).await?;
 
@@ -111,13 +169,21 @@ pub trait Channel: Send + Sync {
     }
 
     #[inline]
-    async fn broadcast_to_others(&mut self, client: Arc<Client>, payload: &Payload) -> Result<(), FastSocketError> {
+    async fn broadcast_to_others(
+        &mut self,
+        client: Arc<Client>,
+        payload: &Payload,
+    ) -> Result<(), FastSocketError> {
         let socket_id = client.get_socket_id();
         self.broadcast_to_everyone_except(socket_id, payload).await
     }
 
     #[inline]
-    async fn broadcast_to_everyone_except(&mut self, socket_id: &str, payload: &Payload) -> Result<(), FastSocketError> {
+    async fn broadcast_to_everyone_except(
+        &mut self,
+        socket_id: &str,
+        payload: &Payload,
+    ) -> Result<(), FastSocketError> {
         let write_guard = self.get_connections().write().await;
         for (id, client) in write_guard.iter() {
             if id != socket_id {

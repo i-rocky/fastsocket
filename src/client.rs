@@ -1,7 +1,6 @@
 use crate::app::App;
 use crate::channel_manager::ChannelManager;
 use crate::websocket_connection::WebsocketConnection;
-use std::fmt::Write;
 use std::sync::Arc;
 use tokio::sync::{Mutex, RwLock};
 

@@ -44,10 +44,8 @@ func main() {
 			})
 			return
 		}
-		auth, err := client.AuthenticateUser(params, map[string]any{
-			"id":   "1",
-			"name": "Rocky",
-		})
+
+		auth, err := client.AuthorizePrivateChannel(params)
 		if err != nil {
 			log.Printf("Error authenticating user: %v", err)
 			c.JSON(500, gin.H{
