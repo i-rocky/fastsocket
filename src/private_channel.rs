@@ -20,23 +20,21 @@ impl PrivateChannel {
             connections: RwLock::new(HashMap::with_capacity(32)),
         }
     }
-
-    #[inline(always)]
-    pub fn get_name(&self) -> &str {
-        &self.name
-    }
 }
 
 #[async_trait]
 impl Channel for PrivateChannel {
+    #[inline]
     fn get_name(&self) -> &str {
         &self.name
     }
 
+    #[inline]
     fn get_connections(&self) -> &RwLock<HashMap<String, Arc<Client>>> {
         &self.connections
     }
 
+    #[inline]
     async fn subscribe(&mut self, client: Arc<Client>, payload: &Payload) -> Result<(), FastSocketError> {
         let result = self.verify_signature(client.clone(), payload).await;
         if result.is_err() {

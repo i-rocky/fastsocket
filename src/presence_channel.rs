@@ -25,11 +25,6 @@ impl PresenceChannel {
         }
     }
 
-    #[inline(always)]
-    pub fn get_name(&self) -> &str {
-        &self.name
-    }
-
     #[inline]
     async fn channel_data(&self) -> Map<String, Value> {
         let mut map = Map::new();

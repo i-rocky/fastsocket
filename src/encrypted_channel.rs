@@ -4,13 +4,15 @@ use async_trait::async_trait;
 use std::collections::HashMap;
 use std::sync::Arc;
 use tokio::sync::RwLock;
+use crate::errors::FastSocketError;
+use crate::payload::Payload;
 
-pub struct PublicChannel {
+pub struct EncryptedChannel {
     name: String,
     connections: RwLock<HashMap<String, Arc<Client>>>,
 }
 
-impl PublicChannel {
+impl EncryptedChannel {
     #[inline]
     pub fn new(name: String) -> Self {
         Self {
@@ -21,7 +23,7 @@ impl PublicChannel {
 }
 
 #[async_trait]
-impl Channel for PublicChannel {
+impl Channel for EncryptedChannel {
     #[inline]
     fn get_name(&self) -> &str {
         &self.name
@@ -30,5 +32,15 @@ impl Channel for PublicChannel {
     #[inline]
     fn get_connections(&self) -> &RwLock<HashMap<String, Arc<Client>>> {
         &self.connections
+    }
+
+    #[inline]
+    async fn subscribe(&mut self, client: Arc<Client>, payload: &Payload) -> Result<(), FastSocketError> {
+        let result = self.verify_signature(client.clone(), payload).await;
+        if result.is_err() {
+            return Err(FastSocketError::InvalidSignatureError)
+        }
+
+        self.default_subscribe(client, payload).await
     }
 }

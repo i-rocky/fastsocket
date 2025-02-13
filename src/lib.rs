@@ -17,3 +17,4 @@ pub mod websocket;
 pub mod websocket_connection;
 pub mod private_channel;
 pub mod presence_channel;
+pub mod encrypted_channel;
