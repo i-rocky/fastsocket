@@ -16,3 +16,4 @@ pub mod message_factory;
 pub mod websocket;
 pub mod websocket_connection;
 pub mod private_channel;
+pub mod presence_channel;

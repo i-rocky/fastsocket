@@ -6,6 +6,7 @@ use async_trait::async_trait;
 use std::collections::HashMap;
 use std::sync::Arc;
 use tokio::sync::RwLock;
+use crate::presence_channel::PresenceChannel;
 
 #[async_trait]
 pub trait ChannelManager: Send + Sync {
@@ -17,7 +18,7 @@ pub trait ChannelManager: Send + Sync {
         }
 
         if channel_name.starts_with("presence-") {
-            return Arc::new(RwLock::new(Box::new(PublicChannel::new(
+            return Arc::new(RwLock::new(Box::new(PresenceChannel::new(
                 channel_name.to_string(),
             ))));
         }

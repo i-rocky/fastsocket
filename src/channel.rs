@@ -135,6 +135,11 @@ pub trait Channel: Send + Sync {
 
     #[inline]
     async fn unsubscribe(&mut self, socket_id: &str) -> Result<(), FastSocketError> {
+        self.default_unsubscribe(socket_id).await
+    }
+
+    #[inline]
+    async fn default_unsubscribe(&mut self, socket_id: &str) -> Result<(), FastSocketError> {
         Log::debug(&format!("Removing connection: {}", socket_id));
         let mut write_guard = self.get_connections().write().await;
         write_guard.remove(socket_id);

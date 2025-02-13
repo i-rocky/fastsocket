@@ -6,6 +6,8 @@ import (
 	"github.com/pusher/pusher-http-go/v5"
 	"io"
 	"log"
+	"math/rand"
+	"strconv"
 )
 
 //go:embed index.html app.js
@@ -45,7 +47,15 @@ func main() {
 			return
 		}
 
-		auth, err := client.AuthorizePrivateChannel(params)
+		randId := 100 + int(rand.Intn(899))
+		auth, err := client.AuthorizePresenceChannel(params, pusher.MemberData{
+			UserID: strconv.Itoa(randId),
+			UserInfo: map[string]string{
+				"username": "smrockypk",
+				"avatar":   "https://avatars.githubusercontent.com/u/101?v=4",
+			},
+		})
+
 		if err != nil {
 			log.Printf("Error authenticating user: %v", err)
 			c.JSON(500, gin.H{
