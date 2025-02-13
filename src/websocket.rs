@@ -64,12 +64,8 @@ impl WebSocket {
         Log::debug("Connection closed");
     }
 
-    pub async fn on_message(&self, _client: Arc<Client>) {
-        Log::debug("Message received");
-    }
-
     pub async fn on_error(&self, _client: Arc<Client>) {
-        Log::debug("Message received");
+        Log::debug("Error occurred");
     }
 
     pub async fn get_payload(
@@ -145,9 +141,9 @@ impl WebSocket {
             let payload = self.get_payload(mtx_client.clone(), frame?).await;
             drop(guard);
             if payload.is_err() {
-                Log::error(&format!("Error handling message: {:?}", payload));
+                Log::error(&format!("Error getting payload: {:?}", payload));
                 self.on_error(mtx_client.clone()).await;
-                break;
+                continue;
             }
 
             let payload = payload.unwrap();
@@ -160,15 +156,15 @@ impl WebSocket {
             if msg.is_err() {
                 Log::error(&format!("Error creating message: {:?}", msg.err().unwrap()));
                 self.on_error(mtx_client.clone()).await;
-                break;
+                continue;
             }
 
             let responder = msg.unwrap();
             let result = responder.respond().await;
             if result.is_err() {
-                Log::error(&format!("Error handling message: {:?}", result));
+                Log::error(&format!("Error responding: {:?}", result));
                 self.on_error(mtx_client.clone()).await;
-                break;
+                continue;
             }
         }
 

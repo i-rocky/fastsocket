@@ -12,6 +12,12 @@ use crate::presence_channel::PresenceChannel;
 #[async_trait]
 pub trait ChannelManager: Send + Sync {
     fn make_channel(&self, channel_name: &str) -> Arc<RwLock<Box<dyn Channel>>> {
+        if channel_name.starts_with("private-encrypted-") {
+            return Arc::new(RwLock::new(Box::new(EncryptedChannel::new(
+                channel_name.to_string(),
+            ))));
+        }
+
         if channel_name.starts_with("private-") {
             return Arc::new(RwLock::new(Box::new(PrivateChannel::new(
                 channel_name.to_string(),
@@ -20,12 +26,6 @@ pub trait ChannelManager: Send + Sync {
 
         if channel_name.starts_with("presence-") {
             return Arc::new(RwLock::new(Box::new(PresenceChannel::new(
-                channel_name.to_string(),
-            ))));
-        }
-
-        if channel_name.starts_with("encrypted-") {
-            return Arc::new(RwLock::new(Box::new(EncryptedChannel::new(
                 channel_name.to_string(),
             ))));
         }

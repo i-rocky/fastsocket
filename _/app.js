@@ -158,7 +158,7 @@ function run(env) {
     subscribe('presence-channel');
     subscribe('public-channel');
     subscribe('private-channel');
-    subscribe('encrypted-channel');
+    subscribe('private-encrypted-channel');
   } else if (compareVersions(env.version, [1,4,0]) >= 0) {
     pusher = new Pusher(env.key, {
       auth: {

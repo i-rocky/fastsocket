@@ -66,6 +66,25 @@ func main() {
 
 		c.Data(200, "application/json", auth)
 	})
+	r.GET("/trigger", func(c *gin.Context) {
+		err := client.Trigger(
+			"private-channel",
+			"event",
+			map[string]string{
+				"message": "Hello world",
+			})
+
+		if err != nil {
+			log.Printf("Error triggering event: %v", err)
+			c.JSON(500, gin.H{
+				"error": "Error triggering event",
+			})
+			return
+		}
+		c.JSON(200, gin.H{
+			"message": "Event triggered successfully",
+		})
+	})
 
 	// Start server
 	log.Println("Starting server on port 8080")
@@ -76,11 +95,12 @@ func main() {
 
 func pusherClient() *pusher.Client {
 	return &pusher.Client{
-		AppID:   "fastsocket",
-		Key:     "fastsocket",
-		Secret:  "secret",
-		Host:    "127.0.0.1:6002",
-		Secure:  false,
-		Cluster: "ap1",
+		AppID:                     "fastsocket",
+		Key:                       "fastsocket",
+		Secret:                    "secret",
+		Host:                      "127.0.0.1:6002",
+		Secure:                    false,
+		Cluster:                   "ap1",
+		EncryptionMasterKeyBase64: "nqOuzQJ6rZ0P1OE8hhDM7ubGj0Y93OyIoz+pUY8yy+w=",
 	}
 }
